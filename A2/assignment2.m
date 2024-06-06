@@ -13,6 +13,7 @@ image_gray = im2double(image_gray);
 % This part aims to identify areas with significant intensity changes, potentially corresponding to edges and corners
 sigma = 0.5; % Defines the standard deviation of the Gaussian filter, controlling its blurriness.
 r = 3 * sigma;
+c = -r:r;
 [X, Y] = meshgrid(c, c);
 Gx = -(X./(2*pi*sigma^4)) .* exp(-(X.^2 + Y.^2) / (2 * sigma^2));
 Gy = Gx';
