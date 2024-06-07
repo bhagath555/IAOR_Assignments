@@ -7,17 +7,20 @@ F = get_fft(boundary{1}, 24);
 figure;
 imshow(image);
 hold on; plot(boundary{1}(:,1), boundary{1}(:,2), 'r',  'LineWidth',2);
-%% Training an image
-[t_boundary, t_image] = image_boundary("test1B.jpg");
-figure;
-imshow(t_image);
-num_bs = size(t_boundary, 1);
-for i = 1: num_bs
-    bi = t_boundary{i};
-    if (size(bi, 1)  > 24)
-        Fi = get_fft(bi, 24);
-        if norm(F - Fi) < 0.09
-            hold on; plot(bi(:,1), bi(:,2), 'r', 'LineWidth',2);
+image_list = ["test1B.jpg", "test2B.jpg", "test3B.jpg"];
+for ims = 1:3
+    %% Training an image
+    [t_boundary, t_image] = image_boundary(image_list(ims));
+    figure;
+    imshow(t_image);
+    num_bs = size(t_boundary, 1);
+    for i = 1: num_bs
+        bi = t_boundary{i};
+        if (size(bi, 1)  > 24)
+            Fi = get_fft(bi, 24);
+            if norm(F - Fi) < 0.09
+                hold on; plot(bi(:,1), bi(:,2), 'r', 'LineWidth',2);
+            end
         end
     end
 end
@@ -25,11 +28,11 @@ end
 % Fixing the error
 function F = get_fft(boundary_pixels, num_descrip)
     D = boundary_pixels(:, 1) + j * boundary_pixels(:, 2);
-    F = fft(D, num_descrip);
+    F = fft(D);
     % Positoin invarient
-    F(1) = 0 + j * 0;
+    F = F(2:24);
     % Scale - Divide all the descriptors with second descriptor (F1) 
-    F = F/(F(2));
+    F = F/(F(1));
     % Rotation - Consider the absolute value only. neglect the orientation.
     F = abs(F);
 end
