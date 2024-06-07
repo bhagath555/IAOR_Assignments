@@ -22,7 +22,7 @@ for i = 1: num_bs
     end
 end
 
-
+% Fixing the error
 function F = get_fft(boundary_pixels, num_descrip)
     D = boundary_pixels(:, 1) + j * boundary_pixels(:, 2);
     F = fft(D, num_descrip);

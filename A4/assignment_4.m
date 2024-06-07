@@ -34,7 +34,6 @@ g = exp(-i.^2 / (2*sigma^2)) / (sqrt(2*pi)*sigma);
 gaussian = g'*g;
 
 %% Adjusting the padding and shifting 
-
 extend_pad = size(J)-size(gaussian);
 padding = padarray(gaussian,extend_pad, 0, "post");
 padding = circshift(padding, -1 * round(size(gaussian)/2));
