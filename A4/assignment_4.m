@@ -6,11 +6,6 @@ img = imread('taskA.png');
 gray_img = rgb2gray(img);
 gray_img = im2double(gray_img); % Convert to range [0, 1]
 
-% Plot the grayscale image
-figure;
-imshow(gray_img);
-title('Grayscale Image');
-
 %% Image gaussian noise and fft
 J = imnoise(gray_img,'gaussian', 0, 0.01);
 figure;
@@ -26,12 +21,14 @@ imagesc(image_fft_s);
 title('Image FFT');
 
 %% Gaussina noise mask
-sigma =2.5;
-r = round(3 * sigma);      % Mask radius
+sigma = 1.2;
+r = round( 3 * sigma );         % Mask radius
 i = -r:r;                  % this represents x and y. both are same here.
 % 1D Gaussian 
 g = exp(-i.^2 / (2*sigma^2)) / (sqrt(2*pi)*sigma);
 gaussian = g'*g;
+% Normalizing the gaussian mask
+gaussian = gaussian/sum(gaussian(:));
 
 %% Adjusting the padding and shifting 
 extend_pad = size(J)-size(gaussian);
@@ -50,21 +47,19 @@ imagesc(fft_padding_s);
 title('Mask FFT');
 
 %% Convolution of mask and image
-
 Guv = image_fft .* fft_padding;
 
 figure
 imagesc(log(abs(fftshift(Guv))));
 
-%% Inverse FFT
+% Inverse FFT
 final = ifft2(Guv);
 
-%% Helping functions
-
+% Plotting the values
 figure;
 subplot(1,2,1);
 imshow(J);
-title("Blurred image");
+title("Gaussian noise image");
 
 subplot(1,2,2);
 imshow(final);
