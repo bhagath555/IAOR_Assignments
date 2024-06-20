@@ -2,8 +2,8 @@ clear all;
 close all;
 
 %% taskA function has the implementation of taskA. 
-% Reducting noise of the image
-taskA();
+% % Reducting noise of the image
+% taskA();
 
 %% taskB function has the implementation of shape detection
 taskB();
