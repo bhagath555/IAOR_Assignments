@@ -1,89 +1,119 @@
-dim = 5;
+dim = 3;
 img = double(imread("1.png"));
 k = 4;
 
-[l, w, d] = size(img);
-num_pixels = l * w;
-% plot(img(:,:,1))
-a = reshape(img(:,:,:), [num_pixels, 3]);
-spacial = rowcols(l,w);
-a = [a, spacial];
+RGB_k_mean(img, dim, k)
 
-n = [];
-for i=1:k
-    n = [n; 255.00*rand([1,dim])];
+% dim = 4;
+% RGBXY_k_mean(img, dim, k);
+
+function RGB_k_mean(img_mat, dim, k)
+    % Image dimensions
+    [l, w, d] = size(img_mat);
+    % Number of pixels
+    num_pixels = l * w;
+    % RGB space matrix
+    rgb_mat = reshape(img_mat(:,:,:), [num_pixels, 3]);
+
+    figure; % Figure for clusting visualization
+    % Finding the optimal result
+    rgb_mat = k_mean(rgb_mat, dim, k);
+
+    % Plotting the results
+     = reshape(rgb_mat(:,1:3), [l,w,d]);
+    figure; imshow(img_mat/255.);
+    figure; imshow(img2/255.);
 end
-n
-% n = [3, 2, 4;
-%      7, 9, 6];
-n_old = n - 1;
 
-while norm(n-n_old) ~= 0
-    dll = []; % size (num_pixels, k). Distance of each points from k's. 
+function RGBXY_k_mean(img_mat, dim, k)
+    % Image dimensions
+    [l, w, d] = size(img_mat);
+    % Number of pixels
+    num_pixels = l * w;
+    % RGB space matrix
+    rgb_mat = reshape(img_mat(:,:,:), [num_pixels, 3]);
+    % RGBXY matrix
+    xy = rowcols(l,w);
+    rgbxy_mat = [rgb_mat, xy];
+
+    figure; % Figure for clusting visualization
+    % Finding the optimal result
+    rgbxy_mat = k_mean(rgbxy_mat, dim, k);
+
+    % Plotting the results
+    img2 = reshape(rgbxy_mat(:,1:3), [l,w,d]);
+    figure; imshow(img/255.);
+    figure; imshow(img2/255.);
+end
+
+
+
+function [data_mat] = k_mean(data_mat, dim, k)
+    if width(data_mat) ~= dim
+        error("data_mat should have width of dim")
+    end
+    n = zeros(k,dim);
     for i=1:k
-        % ik = [kk, round(10*rand([1,2]))];
-        scatter3(n(i,1), n(i,2), n(i,3), 100, n(i,1:3)/255.0);
+        n(i,:) =  255.00*rand([1,dim]);
+    end
+
+    n_old = n - 1; % This to compare the intial while condition 
+    % n_old will be updated in the loop.
+    
+    while norm(n-n_old) ~= 0
+        dll = []; % size (num_pixels, k). Distance of each points from k's. 
+        for i=1:k
+            % ik = [kk, round(10*rand([1,2]))];
+            scatter3(n(i,1), n(i,2), n(i,3), 100, n(i,1:3)/255.0);
+            hold on;
+            temp = dist(data_mat, n(i,:));
+            dll = [dll, temp];
+        end
         hold on;
-        temp = dist(a, n(i,:));
-        dll = [dll, temp];
+        % Points that closer to different k's (num_pixels, 1)
+        [~, indices] = min(dll, [], 2); 
+        % Buckets to store cluster points 
+        % size (num_pixels, k). Distance of each points from k's. 
+        cluster_voting = zeros(size(dll));
+        % Updating the points buckets
+        for i = 1:length(indices)
+            cluster_voting(i, indices(i)) = 1;
+        end
+        % find(up_db(:,i)) gives the indices that closer to i^th cluster. 
+        % We use above information in a vector to get respective points.
+        % We calculate min(array, 1) component wise average. 
+        k_mean = zeros(k,dim);
+        for i=1:k
+            vot_inds = find(cluster_voting(:,i));
+            if ~isempty(vot_inds)
+                p1 = data_mat( vot_inds, 1 );
+                p2 = data_mat( vot_inds, 2 );
+                p3 = data_mat( vot_inds, 3 );
+                ss = 1*ones(size(p3));
+                hold on;
+                scatter3( p1, p2, p3, ss, n(i,1:3)/255.0)
+                hold on;
+                new_avg = mean( data_mat( vot_inds , : ), 1);
+                k_mean(i,:) = new_avg;
+            else 
+                k_mean(i,:) = n(i,:);
+            end
+        end
+        pause(0.1);
+        drawnow;
+        % Update n_old and k_mean matrix
+        n_old = n;
+        n = k_mean;
+        hold off;
     end
-    hold on;
-    % Points that closer to different k's (num_pixels, 1)
-    [~, indices] = min(dll, [], 2); 
-    % Buckets to store cluster points 
-    % size (num_pixels, k). Distance of each points from k's. 
-    cluster_voting = zeros(size(dll));
-    % Updating the points buckets
-    for i = 1:length(indices)
-        up_db(i, indices(i)) = 1;
-    end
-    % find(up_db(:,i)) gives the indices that closer to i^th cluster. 
-    % We use above information in a vector to get respective points.
-    % We calculate min(array, 1) component wise average. 
-    k_mean = [];
-    sty = {'r', 'b'};
+    % Update the image colors with cluster centers
     for i=1:k
-        if length(find(up_db(:,i))) > 0
-            p1 = a( find(up_db(:,i)) , 1 );
-            p2 = a( find(up_db(:,i)) , 2 );
-            p3 = a( find(up_db(:,i)) , 3 );
-            ss = 1*ones(size(p3));
-            hold on;
-            scatter3( p1, p2, p3, ss, n(i,1:3)/255.0)
-            hold on;
-            new_avg = mean( a( find(up_db(:,i)) , : ), 1);
-            k_mean = [k_mean; new_avg];
-        else 
-            k_mean = [k_mean; n(i,:)];
+        vot_inds = find(cluster_voting(:,i));
+        if width(vot_inds) > 0
+            data_mat(vot_inds, :) = repmat(n(i,:), size(vot_inds));
         end
     end
-    pause(0.1);
-    drawnow;
-    % We assign this k_mean to n matrix and do the procedure until we find the
-    % match.
-    n_old = n;
-    n = k_mean;
-    hold off;
-    loli = 5;
 end
-k_mean
-% Update the image colors with cluster centers
-for i=1:k
-    if width(find(up_db(:,i))) > 0
-        temp_indcies = find(up_db(:,i));
-        loli  = 5;
-        a(temp_indcies, :) = repmat(n(i,:), size(temp_indcies));
-    end
-end
-
-img2 = reshape(a(:,1:3), [l,w,d]);
-figure; imshow(img/255.);
-figure; imshow(img2/255.);
-
-% 
-
-
-function []
 
 
 function kn = dist(rgb_vec, k_vec)
