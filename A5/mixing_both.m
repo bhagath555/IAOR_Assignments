@@ -6,7 +6,7 @@ dim = 3;
 img = double(imread("inputEx5_1.jpg"));
 figure; imshow(img/255.);
 title("Original");
-k = 4;
+k = 6;
 RGB_k_mean(img, dim, k)
 dim = 5;
 RGBXY_k_mean(img, dim, k);

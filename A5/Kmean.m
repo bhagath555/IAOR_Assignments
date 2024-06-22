@@ -1,6 +1,4 @@
-img = double(imread('1.png'));
-
-
+img = double(imread('inputEx5_1.jpg'));
 
 k = 3;
 
