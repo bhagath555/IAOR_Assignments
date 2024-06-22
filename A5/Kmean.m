@@ -1,6 +1,6 @@
-img = double(imread('inputEx5_1.jpg'));
+img = double(imread('1.png'));
 
-imshow(img)
+
 
 k = 3;
 
@@ -14,7 +14,7 @@ g = reshape(img(:,:,2), [1,num_pix]);
 b = reshape(img(:,:,3), [1,num_pix]);
 
 h = scatter3(cols(:,1), cols(:,2), cols(:,3), 5*ones(1, num_pix), cols/255);
-
+figure; imshow(img/255);
 k =5;
 kk = [];
 %% Generate column vector of k clusters

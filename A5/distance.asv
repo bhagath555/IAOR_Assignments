@@ -68,23 +68,8 @@ function kn = dist(rgb_vec, k_vec)
 end
 
 
-function mat = rowcols(rows, cols)
-    mat = zeros(rows*cols, 2);
-    count = 1;
-    for c=1:cols
-        for r=1:rows
-            mat(count, :) = [r, c];
-        end
-    end
-end
+function mat = rowcols(rows, col)
 
-rows = 4;
-cols = 3;
-mat = zeros(4*3, 2);
-count = 1;
-for c=1:cols
-    for r=1:rows
-        mat(count, :) = [r, c];
-        count = count + 1;
-    end
+    mat = zeros()
+
 end
