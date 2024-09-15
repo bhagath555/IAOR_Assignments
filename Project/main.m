@@ -50,7 +50,7 @@ function processDirectory(directory, label)
             eccentricity = stats(i).Eccentricity;
             minorAxisLength = stats(i).MinorAxisLength;
             majorAxisLength = stats(i).MajorAxisLength;
-
+            
         end
         
     end
