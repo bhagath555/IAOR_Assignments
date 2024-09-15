@@ -5,53 +5,114 @@
 % testing_morph
 
 % Read and process images from the 'cracked' directory
-crackedDir = 'training_morph/crack/';
-processDirectory(crackedDir, 1);
+TrainingDir = 'training_morph/';
+GroundTruthDir = 'ground_truth/gt_training';
 
-% Non cracked
-crackedDir = 'training_morph/non_crack/';
-processDirectory(nonCrackedDir, 0);
+% Training images list
+TrainingImgs = dir(fullfile(TrainingDir, '*.png'));
 
-function processDirectory(directory, label)
-    % processDirectory - Helper function to process all images in a directory and extract region properties
-    %
-    % Input:
-    %    directory - Directory containing images
-    %    label - A label for the type of image being processed ('Cracked' or 'Non-Cracked')
-    
-    % Get a list of all image files (assume png format) in the directory
-    imageFiles = dir(fullfile(directory, '*.jpg'));  % You can change the extension as needed
-    
+% Ground truth images list
+GroundTruthImgs = dir(fullfile(GroundTruthDir, '*.png'));
+
+features = [];
+labels = [];
+
+if length(TrainingImgs) ~= length(GroundTruthImgs)
+    disp('Ground truth images count should match with training images count')
+else
     % Loop through each file in the directory
-    for k = 1:length(imageFiles)
+    for k = 1:length(TrainingImgs)
         % Get the file name
-        fileName = imageFiles(k).name;
-        inputFilePath = fullfile(directory, fileName);
+        T_fname = TrainingImgs(k).name;
+        GT_fname = GroundTruthImgs(k).name;
+        % File fullpath
+        T_fname = fullfile(TrainingDir, T_fname);
+        GT_fname = fullfile(GroundTruthDir, GT_fname);
         
         % Read the binary image
-        binaryImage = imread(inputFilePath);
-        binaryImage = mean(binaryImage,3);
-        
-        % Label connected components
-        labeledImage = logical(binaryImage);
+        T_img = imread(T_fname);
+        GT_img = imread(GT_fname);
 
-        % ( neighborhood connected components
-        cc = bwconncomp(labeledImage, 8);
+        T_img = imbinarize(T_img(:,:,1));
+        GT_img = imbinarize(GT_img(:,:,1));
+        
+        crack = T_img & GT_img;
+        non_crack = T_img & ~ GT_img;
+
+        % figure;
+        % subplot(1,3,1); imshow(T_img);
+        % subplot(1,3,2); imshow(crack);
+        % subplot(1,3,3); imshow(non_crack);
+
+        c = 6;
+
+        % Connected components of crack and non_crack regions
+        crack_cc = bwconncomp(crack, 8);
+        non_crack_cc = bwconncomp(non_crack, 8);
+
         % Get region properties
-        stats = regionprops(cc, 'Extent', 'Solidity', 'Eccentricity', 'MinorAxisLength', 'MajorAxisLength');
-        
-        % Display the filename and process each region's properties
-        fprintf('Processing image: %s (%s)\n', fileName, label);
-        
-        for i = 1:length(stats)
-            % Extract region properties
-            extent = stats(i).Extent;
-            solidity = stats(i).Solidity;
-            eccentricity = stats(i).Eccentricity;
-            minorAxisLength = stats(i).MinorAxisLength;
-            majorAxisLength = stats(i).MajorAxisLength;
-            
-        end
-        
+        cfs = gen_feat_labels(crack_cc);
+        ncfs = gen_feat_labels(non_crack_cc);
+
+        features = [features; cfs; ncfs];
+        labels = [labels; ones(size(cfs, 1), 1); zeros(size(ncfs, 1), 1)];
+
     end
+end
+
+% Now we got the features and labels. Lets feed them into the SVM
+SVMModel = fitcsvm(features, labels, 'KernelFunction', 'linear', 'Standardize', true);
+
+% Read the trainig image features 
+testingDir = 'testing_morph/';
+testingImgs = dir(fullfile(testingDir, '*.png'));
+
+for k= 1:length(testingImgs)
+    % Get the file name
+    T_fname = testingImgs(k).name;
+    % File fullpath
+    T_fname = fullfile(testingDir, T_fname);
+    % Read the binary image
+    T_img = imread(T_fname);
+    T_img = imbinarize(T_img(:,:,1));
+
+    % Connected components of crack and non_crack regions
+    region_cc = bwconncomp(T_img, 8);
+    % Get region properties
+    region_fs = gen_feat_labels(region_cc);
+
+    %% Predict labels using the SVM model
+    predictedLabels = predict(SVMModel, region_fs);
+    % Label each region with different number
+    labeledImage = labelmatrix(region_cc); 
+    Output = zeros(size(labeledImage));  
+
+    % Color the regions based on predictions
+    for regionIdx = 1:region_cc.NumObjects
+        if predictedLabels(regionIdx) == 1
+            % Crack regions: white
+            Output(labeledImage == regionIdx) = 1; 
+        else
+            % Non-crack regions: black
+            Output(labeledImage == regionIdx) = 0;  
+        end
+    end
+
+    % Display the image
+    figure;
+    imshow(coloredOutput);
+
+end
+
+    
+function features = gen_feat_labels(regions)
+    regions_stats = regionprops(regions, 'Extent', 'Solidity', 'Eccentricity', 'MinorAxisLength', 'MajorAxisLength');
+
+    % aspect_ratio = [regions_stats.MajorAxisLength] ./ [regions_stats.MinorAxisLength];
+    features = ...
+        [ [regions_stats.Eccentricity];
+          [regions_stats.Extent];
+          [regions_stats.Solidity];
+          % aspect_ratio;
+        ]';
 end
