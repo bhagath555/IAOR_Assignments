@@ -66,12 +66,15 @@ SVMModel = fitcsvm(features, labels, 'KernelFunction', 'linear', 'Standardize', 
 % Read the trainig image features 
 testingDir = 'testing_morph/';
 testingImgs = dir(fullfile(testingDir, '*.png'));
-
+reslutsDir = 'results/';
+testingTruDir = 'ground_truth/';
+testingTruImgs = dir(fullfile(testingTruDir, '*.png'));
 for k= 1:length(testingImgs)
     % Get the file name
     T_fname = testingImgs(k).name;
     % File fullpath
     T_fname = fullfile(testingDir, T_fname);
+
     % Read the binary image
     T_img = imread(T_fname);
     T_img = imbinarize(T_img(:,:,1));
@@ -98,9 +101,27 @@ for k= 1:length(testingImgs)
         end
     end
 
+    Output = imbinarize(Output);
+    sk_img = bwskel(Output);
+    % Calculate the non zero pixels = length of the crack in pixels.
+    c_l = nnz(sk_img);
+
+    % Testing ground truth (TGT) images
+    TGT_fname = testingTruImgs(k).name;
+    % File fullpath
+    TGT_fname = fullfile(testingTruDir, TGT_fname);
+    TGT_img = imread(TGT_fname);
+    TGT_img = imbinarize(TGT_img(:,:,1));
+    IoU = IntersectionOverUnion(Output, TGT_img);
+
     % Display the image
     figure;
-    imshow(coloredOutput);
+    subplot(1,3,1); imshow(Output); title('Prediction');
+    subplot(1,3,2); imshow(TGT_img); title('Ground truth');
+    subplot(1,3,3); imshow(sk_img); title('Skeletonization');
+
+    disp(['Crack length                 : ', num2str(c_l)]);
+    disp(['Intersection over Union (IoU): ', num2str(IoU)]);
 
 end
 
